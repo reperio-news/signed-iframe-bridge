@@ -7,7 +7,7 @@ A TypeScript library that enables a parent webpage to communicate with a child i
 ## Install
 
 ```bash
-npm install signed-iframe-bridge
+npm install @reperio-news/signed-iframe-bridge
 ```
 
 ## Quick Start
@@ -15,7 +15,7 @@ npm install signed-iframe-bridge
 ### Parent Page
 
 ```typescript
-import { ParentService } from 'signed-iframe-bridge';
+import { ParentService } from '@reperio-news/signed-iframe-bridge';
 
 const service = new ParentService({
   iframe: document.getElementById('child-iframe') as HTMLIFrameElement,
@@ -35,7 +35,7 @@ await service.connect();
 ### Child Iframe
 
 ```typescript
-import { ChildService, importSPKI } from 'signed-iframe-bridge';
+import { ChildService, importSPKI } from '@reperio-news/signed-iframe-bridge';
 
 const publicKey = await importSPKI(PUBLIC_KEY_PEM, 'ES256');
 
@@ -225,7 +225,7 @@ The `onTokenRefresh` callback is where you integrate with your server. Here's a 
 
 ```typescript
 import express from 'express';
-import { createToken, importPKCS8 } from 'signed-iframe-bridge';
+import { createToken, importPKCS8 } from '@reperio-news/signed-iframe-bridge';
 import { readFileSync } from 'fs';
 
 const app = express();
@@ -250,7 +250,7 @@ app.get('/api/iframe-token', authenticateUser, async (req, res) => {
 When the child iframe forwards the raw token to its own backend:
 
 ```typescript
-import { verifyToken, importSPKI } from 'signed-iframe-bridge';
+import { verifyToken, importSPKI } from '@reperio-news/signed-iframe-bridge';
 import { readFileSync } from 'fs';
 
 const publicKey = await importSPKI(readFileSync('./public-key.pem', 'utf8'), 'ES256');
@@ -364,7 +364,7 @@ interface SignedIframeBridgePayload extends JWTPayload {
 Standalone functions for creating/verifying tokens (useful on your backend):
 
 ```typescript
-import { createToken, verifyToken, decodeToken, isTokenExpired } from 'signed-iframe-bridge';
+import { createToken, verifyToken, decodeToken, isTokenExpired } from '@reperio-news/signed-iframe-bridge';
 
 // Create a signed JWT (TTL in seconds)
 const token = await createToken(privateKey, 'ES256', payload, 3600, { issuer: 'my-app' });
@@ -385,7 +385,7 @@ const expiredCustomGrace = isTokenExpired(token, 5000); // 5s grace
 Key generation and import/export helpers (re-exported from [jose](https://github.com/panva/jose)):
 
 ```typescript
-import { generateKeyPair, importSPKI, importPKCS8, exportSPKI, exportPKCS8 } from 'signed-iframe-bridge';
+import { generateKeyPair, importSPKI, importPKCS8, exportSPKI, exportPKCS8 } from '@reperio-news/signed-iframe-bridge';
 
 // Generate a new key pair
 const { publicKey, privateKey } = await generateKeyPair('ES256');
@@ -422,7 +422,7 @@ Each instance checks `event.source` to ensure it only processes messages from it
 ## Security
 
 - **Origin validation** on every incoming message (strict match, no wildcards)
-- **Namespace filtering** — only processes messages with `ns: 'signed-iframe-bridge'`
+- **Namespace filtering** — only processes messages with `ns: '@reperio-news/signed-iframe-bridge'`
 - **Asymmetric crypto** — the private key stays on your server; only the public key is used client-side
 - **Nonce correlation** for refresh request/response pairs prevents replay confusion
 - **Refresh throttling** on the parent prevents child from overwhelming your token endpoint
