@@ -55,5 +55,8 @@
     "parent",
     "child"
   ],
+  "engines": {
+    "node": ">=20.12.0"
+  },
   "license": "MIT"
 }

@@ -11,7 +11,32 @@ permissions:
   id-token: write
 
 jobs:
+  check-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify CI passed for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs \
+            --jq '.check_runs[] | select(.name | test("test \\(")) | {name, conclusion}' \
+            | tee /dev/stderr
+          FAILED=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs \
+            --jq '[.check_runs[] | select(.name | test("test \\(")) | select(.conclusion != "success")] | length')
+          TOTAL=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs \
+            --jq '[.check_runs[] | select(.name | test("test \\("))] | length')
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "::error::No CI check runs found for this commit. Push to main first."
+            exit 1
+          fi
+          if [ "$FAILED" -ne 0 ]; then
+            echo "::error::CI checks have not all passed for this commit."
+            exit 1
+          fi
+
   test:
+    needs: check-ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
