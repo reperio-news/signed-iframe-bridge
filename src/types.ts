@@ -18,8 +18,12 @@ export type SupportedAlgorithm = 'ES256' | 'RS256';
 export interface ParentServiceOptions {
   /** The iframe element to communicate with. */
   iframe: HTMLIFrameElement;
-  /** Expected origin of the child iframe (e.g. "https://child.example.com"). */
-  childOrigin: string;
+  /**
+   * Expected origin of the child iframe (e.g. "https://child.example.com").
+   * If omitted, automatically derived from the iframe's `src` attribute.
+   * Use `"*"` to allow any origin.
+   */
+  childOrigin?: string;
   /**
    * Async callback invoked when a token is needed (initial auth + refreshes).
    * Must return a signed JWT string obtained from your server.
@@ -38,8 +42,13 @@ export interface ParentServiceOptions {
 
 /** Configuration for the child-side service. */
 export interface ChildServiceOptions {
-  /** Expected origin of the parent page (e.g. "https://parent.example.com"). */
-  parentOrigin: string;
+  /**
+   * Expected origin of the parent page (e.g. "https://parent.example.com").
+   * If omitted, the child accepts messages from any origin initially and
+   * locks onto the origin of the first successfully verified auth token.
+   * Use `"*"` to allow any origin without locking.
+   */
+  parentOrigin?: string;
   /** Public key for client-side JWT verification. */
   publicKey: CryptoKey | KeyLike;
   /** Expected signing algorithm. Defaults to 'ES256'. */

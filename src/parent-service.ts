@@ -29,11 +29,28 @@ export class ParentService extends TypedEmitter<ParentEventMap> {
 
   constructor(options: ParentServiceOptions) {
     super();
-    this.childOrigin = options.childOrigin;
     this.iframe = options.iframe;
+    this.childOrigin = options.childOrigin ?? this.deriveChildOrigin();
     this.onTokenRefresh = options.onTokenRefresh;
     this.connectTimeout = options.connectTimeout ?? 30_000;
     this.refreshThrottleMs = options.refreshThrottleMs ?? 1_000;
+  }
+
+  /** Derive the child origin from the iframe's src attribute. */
+  private deriveChildOrigin(): string {
+    const src = this.iframe.src;
+    if (!src) {
+      throw new Error(
+        'Cannot derive childOrigin: iframe has no src attribute. Set childOrigin explicitly.',
+      );
+    }
+    try {
+      return new URL(src).origin;
+    } catch {
+      throw new Error(
+        `Cannot derive childOrigin: iframe src "${src}" is not a valid URL. Set childOrigin explicitly.`,
+      );
+    }
   }
 
   /**

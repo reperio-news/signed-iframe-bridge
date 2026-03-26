@@ -20,7 +20,7 @@ export function generateNonce(): string {
   return crypto.randomUUID();
 }
 
-/** Validate that a message origin matches the expected origin. */
+/** Validate that a message origin matches the expected origin. Supports `"*"` as a wildcard. */
 export function isOriginAllowed(expected: string, actual: string): boolean {
-  return expected === actual;
+  return expected === '*' || expected === actual;
 }

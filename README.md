@@ -19,7 +19,7 @@ import { ParentService } from '@reperio-news/signed-iframe-bridge';
 
 const service = new ParentService({
   iframe: document.getElementById('child-iframe') as HTMLIFrameElement,
-  childOrigin: 'https://child.example.com',
+  // childOrigin is automatically derived from the iframe's src attribute
   onTokenRefresh: async () => {
     // Fetch a signed JWT from your backend — the private key stays on the server
     const res = await fetch('/api/iframe-token');
@@ -40,7 +40,7 @@ import { ChildService, importSPKI } from '@reperio-news/signed-iframe-bridge';
 const publicKey = await importSPKI(PUBLIC_KEY_PEM, 'ES256');
 
 const service = new ChildService({
-  parentOrigin: 'https://parent.example.com',
+  // parentOrigin is optional — auto-locks to the first verified parent origin
   publicKey,
 });
 
@@ -283,7 +283,7 @@ new ParentService(options: ParentServiceOptions)
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | `iframe` | `HTMLIFrameElement` | Yes | — | The iframe element to communicate with |
-| `childOrigin` | `string` | Yes | — | Expected origin of the child iframe |
+| `childOrigin` | `string` | No | Derived from iframe `src` | Expected origin of the child iframe. Auto-derived from the iframe's `src` if omitted. Use `"*"` to allow any origin |
 | `onTokenRefresh` | `() => Promise<string>` | Yes | — | Async callback that returns a signed JWT string (fetch from your server) |
 | `connectTimeout` | `number` | No | `30000` | Timeout in ms waiting for child ready |
 | `refreshThrottleMs` | `number` | No | `1000` | Minimum interval in ms between refresh calls (prevents child from overwhelming your backend) |
@@ -312,7 +312,7 @@ new ChildService(options: ChildServiceOptions)
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
-| `parentOrigin` | `string` | Yes | — | Expected origin of the parent page |
+| `parentOrigin` | `string` | No | Auto-lock | Expected origin of the parent page. If omitted, accepts any origin initially and locks onto the origin of the first verified auth token. Use `"*"` to allow any origin without locking |
 | `publicKey` | `CryptoKey \| KeyLike` | Yes | — | Public key for JWT verification |
 | `algorithm` | `'ES256' \| 'RS256'` | No | `'ES256'` | Expected signing algorithm |
 | `issuer` | `string` | No | — | Expected JWT issuer (rejects mismatches) |
@@ -421,7 +421,7 @@ Each instance checks `event.source` to ensure it only processes messages from it
 
 ## Security
 
-- **Origin validation** on every incoming message (strict match, no wildcards)
+- **Origin validation** on every incoming message (strict match by default, or `"*"` to allow any origin)
 - **Namespace filtering** — only processes messages with `ns: '@reperio-news/signed-iframe-bridge'`
 - **Asymmetric crypto** — the private key stays on your server; only the public key is used client-side
 - **Nonce correlation** for refresh request/response pairs prevents replay confusion
@@ -429,6 +429,17 @@ Each instance checks `event.source` to ensure it only processes messages from it
 - **Grace period** on token expiry (2s default) prevents using almost-expired tokens
 - **Timeouts** on all async operations to prevent indefinite hanging
 - **Error propagation** across the postMessage boundary with preserved error context
+
+### Origin Auto-Detection
+
+Both `childOrigin` and `parentOrigin` are optional:
+
+- **`childOrigin`** (parent side) — automatically derived from the iframe's `src` attribute if omitted.
+- **`parentOrigin`** (child side) — if omitted, the child accepts messages from any origin initially. Once the first JWT is successfully verified, the child **locks onto that origin** and rejects all subsequent messages from other origins. This is the recommended default — the JWT signature acts as the trust anchor, and the locked origin provides defense-in-depth afterward.
+
+Set either to `"*"` to allow any origin permanently without locking.
+
+This is safe because **JWT signature verification is the primary security mechanism** — a malicious origin cannot forge a valid token without the private key.
 
 ### Rate Limiting
 

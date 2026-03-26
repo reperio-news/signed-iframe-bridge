@@ -28,7 +28,8 @@ import { createDeferred, generateNonce, isOriginAllowed, type Deferred } from '.
 import { TypedEmitter } from './events.js';
 
 export class ChildService extends TypedEmitter<ChildEventMap> {
-  private readonly parentOrigin: string;
+  private parentOrigin: string;
+  private readonly autoLockOrigin: boolean;
   private readonly publicKey: CryptoKey | KeyLike;
   private readonly algorithm: SupportedAlgorithm;
   private readonly issuer?: string;
@@ -39,7 +40,7 @@ export class ChildService extends TypedEmitter<ChildEventMap> {
   private currentToken: string | null = null;
   private currentPayload: SignedIframeBridgePayload | null = null;
   private messageHandler: ((event: MessageEvent) => void) | null = null;
-  private authDeferred: Deferred<string> | null = null;
+  private authDeferred: Deferred<{ token: string; origin: string }> | null = null;
   private pendingRefreshes = new Map<string, Deferred<string>>();
   private connectPromise: Promise<AuthState> | null = null;
   private connected = false;
@@ -47,7 +48,9 @@ export class ChildService extends TypedEmitter<ChildEventMap> {
 
   constructor(options: ChildServiceOptions) {
     super();
-    this.parentOrigin = options.parentOrigin;
+    // When parentOrigin is omitted, accept any origin initially and lock after first auth
+    this.autoLockOrigin = options.parentOrigin === undefined;
+    this.parentOrigin = options.parentOrigin ?? '*';
     this.publicKey = options.publicKey;
     this.algorithm = options.algorithm ?? 'ES256';
     this.issuer = options.issuer;
@@ -160,7 +163,7 @@ export class ChildService extends TypedEmitter<ChildEventMap> {
     window.addEventListener('message', this.messageHandler);
 
     // Create a deferred for the initial auth token
-    this.authDeferred = createDeferred<string>();
+    this.authDeferred = createDeferred<{ token: string; origin: string }>();
 
     // Tell the parent we're ready
     window.parent.postMessage(createReadyMessage(), this.parentOrigin);
@@ -171,8 +174,12 @@ export class ChildService extends TypedEmitter<ChildEventMap> {
     }, this.connectTimeout);
 
     try {
-      const token = await this.authDeferred.promise;
+      const { token, origin } = await this.authDeferred.promise;
       await this.setToken(token);
+      // Lock onto the authenticated parent's origin
+      if (this.autoLockOrigin) {
+        this.parentOrigin = origin;
+      }
       this.connected = true;
       const state = this.buildAuthState();
       this.emit('authenticated', state);
@@ -194,8 +201,8 @@ export class ChildService extends TypedEmitter<ChildEventMap> {
     this.emit('message', data as AnyProtocolMessage);
 
     if (isAuthMessage(data)) {
-      // Initial auth token from parent
-      this.authDeferred?.resolve(data.token);
+      // Initial auth token from parent — include origin for auto-lock
+      this.authDeferred?.resolve({ token: data.token, origin: event.origin });
       return;
     }
 
