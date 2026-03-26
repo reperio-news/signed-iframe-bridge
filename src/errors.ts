@@ -36,4 +36,3 @@ export class ConnectionTimeoutError extends SignedIframeBridgeError {
     this.name = 'ConnectionTimeoutError';
   }
 }
-

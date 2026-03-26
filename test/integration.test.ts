@@ -145,7 +145,13 @@ describe('integration: ParentService + ChildService', () => {
     };
   }
 
-  function createParent(overrides: Partial<Parameters<typeof ParentService['prototype']['constructor']> extends never ? Record<string, unknown> : Record<string, unknown>> = {}) {
+  function createParent(
+    overrides: Partial<
+      Parameters<(typeof ParentService)['prototype']['constructor']> extends never
+        ? Record<string, unknown>
+        : Record<string, unknown>
+    > = {},
+  ) {
     const iframe = createMockIframe();
     const makeToken = createTokenFactory();
     return new ParentService({
@@ -454,7 +460,9 @@ describe('integration: ParentService + ChildService', () => {
     let readyFired = false;
 
     parent.on('message', (msg) => messages.push(msg));
-    parent.on('ready', () => { readyFired = true; });
+    parent.on('ready', () => {
+      readyFired = true;
+    });
 
     await Promise.all([parent.connect(), child.authenticate()]);
 
