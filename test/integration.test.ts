@@ -386,7 +386,7 @@ describe('integration: ParentService + ChildService', () => {
 
     // Should have received at least the auth message
     expect(messages.length).toBeGreaterThanOrEqual(1);
-    expect(messages.some((m: any) => m.type === 'auth')).toBe(true);
+    expect(messages.some((m: Record<string, unknown>) => m.type === 'auth')).toBe(true);
 
     parent.destroy();
     child.destroy();
@@ -459,7 +459,7 @@ describe('integration: ParentService + ChildService', () => {
     await Promise.all([parent.connect(), child.authenticate()]);
 
     expect(readyFired).toBe(true);
-    expect(messages.some((m: any) => m.type === 'ready')).toBe(true);
+    expect(messages.some((m: Record<string, unknown>) => m.type === 'ready')).toBe(true);
 
     parent.destroy();
     child.destroy();
