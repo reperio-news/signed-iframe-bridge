@@ -1,0 +1,59 @@
+{
+  "name": "@reperio-news/signed-iframe-bridge",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reperio-news/signed-iframe-bridge.git"
+  },
+  "version": "0.1.0",
+  "description": "Secure parent-child iframe communication with signed JWT authentication",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ test/",
+    "lint:fix": "eslint src/ test/ --fix",
+    "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'test/**/*.ts'",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "happy-dom": "^20.8.8",
+    "prettier": "^3.8.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.57.2",
+    "vitest": "^2.1.8"
+  },
+  "keywords": [
+    "iframe",
+    "postmessage",
+    "jwt",
+    "authentication",
+    "signed",
+    "secure",
+    "parent",
+    "child"
+  ],
+  "license": "MIT"
+}
