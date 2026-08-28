@@ -62,9 +62,18 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run build
-      - run: npm publish --provenance --access public
+      # idempotent: registries refuse republishing a version, so a re-run of a
+      # partially failed release must skip what already landed
+      - name: Publish (skip if version already on npmjs)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          V=$(node -p "require('./package.json').version")
+          if npm view "@reperio-news/signed-iframe-bridge@${V}" version >/dev/null 2>&1; then
+            echo "::notice::${V} already published to npmjs - skipping"
+            exit 0
+          fi
+          npm publish --provenance --access public
 
   publish-gpr:
     needs: test
@@ -78,16 +87,28 @@ jobs:
           registry-url: https://npm.pkg.github.com
       - run: npm ci
       - run: npm run build
-      - run: npm publish --access public
+      - name: Publish (skip if version already on GitHub Packages)
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(node -p "require('./package.json').version")
+          if npm view "@reperio-news/signed-iframe-bridge@${V}" version >/dev/null 2>&1; then
+            echo "::notice::${V} already published to GitHub Packages - skipping"
+            exit 0
+          fi
+          npm publish --access public
 
   github-release:
     needs: [publish-npm, publish-gpr]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Create GitHub Release
+      - name: Create GitHub Release (skip if it exists)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" --generate-notes
+        run: |
+          if gh release view "${{ github.ref_name }}" >/dev/null 2>&1; then
+            echo "::notice::release ${{ github.ref_name }} already exists - skipping"
+          else
+            gh release create "${{ github.ref_name }}" --generate-notes
+          fi
