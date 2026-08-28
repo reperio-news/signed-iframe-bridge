@@ -60,6 +60,16 @@ jobs:
           node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
+      # fail fast with a clear message when NPM_TOKEN is expired/insufficient —
+      # npm masks bad publish auth as a confusing E404
+      - name: Verify npm token
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if ! npm whoami; then
+            echo "::error::NPM_TOKEN is invalid or expired - mint a new granular token (scope @reperio-news, read+write) on npmjs.com and update the NPM_TOKEN repository secret."
+            exit 1
+          fi
       - run: npm ci
       - run: npm run build
       # idempotent: registries refuse republishing a version, so a re-run of a
